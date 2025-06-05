@@ -290,7 +290,14 @@ def init_load():
             loading_started = True
             # Futtasd háttérszálban, hogy ne blokkolja a válaszadást
             threading.Thread(target=load_all_vectors_to_list).start()
-
+        if not loading_done:
+                return """
+                <script>
+                    alert("Kérlek várj, betöltés folyamatban...");
+                    setTimeout(() => location.reload(), 2000);  // 2másodperc múlva újratölt
+                </script>
+                """
+    
     return redirect("/chatbot")
 
 # index, melyik ground truth-t hasonlítjuk össze az adott kérdésnél
@@ -298,14 +305,7 @@ current_gt_index = 0
 
 @app.route('/chatbot', methods=['GET', 'POST'])
 def index():
-    if not loading_done:
-        return """
-        <script>
-            alert("Kérlek várj, betöltés folyamatban...");
-            setTimeout(() => location.reload(), 3000);  // 3 másodperc múlva újratölt
-        </script>
-        """
-    
+    print(f"Process ID: {os.getpid()}")
     if request.method == 'POST':
         
         start_total = time.time()
@@ -361,5 +361,5 @@ def index():
 if __name__ == '__main__':
     #load_all_vectors_to_list()
     #app.run(debug=True)
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=10000)
 
