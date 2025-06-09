@@ -185,7 +185,42 @@ body.show-chatbot .chatbot{
     font-size: 1.35rem;
 
 }
+ .overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(50, 50, 50, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    z-index: 9999;
+}
 
+.message {
+    text-align: center;
+    max-width: 90%;
+    width: 300px;
+}
+
+.progress-container {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.2);
+    height: 20px;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+.progress-bar {
+    height: 100%;
+    width: 0%;
+    background: #00ffcc;
+    transition: width 0.5s ease;
+}
 .chat-input textarea:valid ~ span {
     visibility: visible;
   }
@@ -212,3 +247,4 @@ body.show-chatbot .chatbot{
       display: block;
     }
   }
+ 

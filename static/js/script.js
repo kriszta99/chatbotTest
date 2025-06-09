@@ -1,8 +1,66 @@
+async function checkStatus() {
+    if (!navigator.onLine) {
+         Swal.fire({
+            icon: 'error',
+            title: 'Nincs internetkapcsolat',
+            text: 'Kérlek, próbálkozz később, ha lesz internetkapcsolat!',
+            confirmButtonText: 'Ok'
+        });
+        return;
+    }
+
+    Swal.fire({
+        title: 'Betöltés...',
+        text: 'Az adatok betöltése folyamatban van.',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    async function pollStatus() {
+        try {
+            const res = await fetch("/status");
+            const data = await res.json();
+            if (data.done) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Kész!',
+                    text: 'Átirányítás folyamatban...',
+                    showConfirmButton: false,
+                    timer: 1000
+                }).then(() => {
+                    window.location.href = "/chatbot";
+                });} 
+            else {
+                setTimeout(pollStatus, 2000);
+            }
+        } catch (e) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Hiba',
+                text: 'Nem sikerült ellenőrizni az állapotot. Próbálkozás újra...',
+                timer: 3000,
+                showConfirmButton: false
+            }).then(() => {
+                pollStatus();
+            });
+        }
+    }
+
+    pollStatus();
+    }
+
+window.addEventListener("load", () => {
+    checkStatus();
+});
+
 const chatInput = document.querySelector(".chat-input textarea");
 const sendChatBtn = document.querySelector(".chat-input span");
 const chatbox = document.querySelector(".chatbox");
 const chatbotToggler = document.querySelector(".chatbot-toggler");
 const chatbotCloseBtn = document.querySelector(".close-btn");
+
 
 let userMessage=null;
 const inputInitHeight = chatInput.scrollHeight;
@@ -75,23 +133,30 @@ const handleChat = async () => {
     chatbox.appendChild(incomingChatLi);
     chatbox.scrollTo(0, chatbox.scrollHeight);
     try {
-        const response = await fetch('/chatbot', {  //ide küldjük a kérést
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question: userMessage })
-        });
-    
+    const response = await fetch('/chatbot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: userMessage })
+    });
+
         const data = await response.json();
-        console.log("Válasz:", data.answer);  //kiírjuk a választ a konzolra (debugging célból)
-    
-        //az érkező választ megjelenítem a chatboxban
         chatbox.removeChild(incomingChatLi);
-        chatbox.appendChild(createChatLi(data.answer, "incoming"));  //a válasz megjelenik itt
+
+        if (data.error) {
+            // hiba esetén alert ablakot jelenitek meg
+            alert(`Hiba történt:\n${data.error}`);
+        } else {
+            chatbox.appendChild(createChatLi(data.answer, "incoming"));
+        }
+
         chatbox.scrollTo(0, chatbox.scrollHeight);
-    
+
     } catch (error) {
+        chatbox.removeChild(incomingChatLi);
+        alert("Hálózati hiba vagy a szerver nem elérhető.");
         console.error("Hiba történt:", error);
     }
+
     
 
 }
