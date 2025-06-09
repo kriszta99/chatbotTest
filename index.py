@@ -247,4 +247,4 @@ def index():
 if __name__ == '__main__':
     #load_all_vectors_to_list()
     #app.run(debug=True)
-    app.run()
+    app.run(host="0.0.0.0", port=10000)
