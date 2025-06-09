@@ -3,7 +3,6 @@ from upstash_vector import Index
 import numpy as np
 from collections import defaultdict
 import os
-import pandas as pd
 import time
 import openai
 from google import genai
