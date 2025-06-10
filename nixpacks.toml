@@ -1,2 +1,2 @@
 [start]
-cmd = "gunicorn index:app"
+cmd = "gunicorn --workers 1 index:app"
