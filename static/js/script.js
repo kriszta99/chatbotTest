@@ -31,6 +31,7 @@ async function checkStatus() {
                     timer: 1000
                 }).then(() => {
                     window.location.href = "/chatbot";
+                    
                 });} 
             else {
                 setTimeout(pollStatus, 2000);
@@ -52,8 +53,12 @@ async function checkStatus() {
     }
 
 window.addEventListener("load", () => {
-    checkStatus();
+    // Csak akkor indítjuk el a checkStatus-t, ha nem a /chatbot oldalon vagyunk
+    if (window.location.pathname !== "/chatbot") {
+        checkStatus();
+    }
 });
+
 
 const chatInput = document.querySelector(".chat-input textarea");
 const sendChatBtn = document.querySelector(".chat-input span");
@@ -61,7 +66,7 @@ const chatbox = document.querySelector(".chatbox");
 const chatbotToggler = document.querySelector(".chatbot-toggler");
 const chatbotCloseBtn = document.querySelector(".close-btn");
 
-
+   
 let userMessage=null;
 const inputInitHeight = chatInput.scrollHeight;
 
@@ -110,6 +115,7 @@ const createChatLi = (message, className) => {
     return chatLi;
 };
 
+
 const handleChat = async () => {
     //a felhasználó által beírt üzenet, és távolítom el a felesleges szóközöket
     userMessage = chatInput.value.trim();
@@ -122,13 +128,6 @@ const handleChat = async () => {
     chatbox.appendChild(createChatLi(userMessage, "outgoing"));
     chatbox.scrollTo(0, chatbox.scrollHeight);
 
-    /*setTimeout(() => {
-        // Display "Thinking..." message while waiting for the response
-        const incomingChatLi = createChatLi("Thinking...", "incoming");
-        chatbox.appendChild(incomingChatLi);
-        chatbox.scrollTo(0, chatbox.scrollHeight);
-    },600)
-    */
     const incomingChatLi = createChatLi("Gondolkodom...", "incoming");
     chatbox.appendChild(incomingChatLi);
     chatbox.scrollTo(0, chatbox.scrollHeight);
@@ -144,7 +143,13 @@ const handleChat = async () => {
 
         if (data.error) {
             // hiba esetén alert ablakot jelenitek meg
-            alert(`Hiba történt:\n${data.error}`);
+            //alert(`Hiba történt:\n${data.error}`);
+             Swal.fire({
+                icon: 'error',
+                title: 'Hiba',
+                text: `Hiba történt: ${data.error}`,
+                confirmButtonText: 'OK'
+            });
         } else {
             chatbox.appendChild(createChatLi(data.answer, "incoming"));
         }
@@ -153,13 +158,21 @@ const handleChat = async () => {
 
     } catch (error) {
         chatbox.removeChild(incomingChatLi);
-        alert("Hálózati hiba vagy a szerver nem elérhető.");
+        //alert("Hálózati hiba vagy a szerver nem elérhető.");
+        Swal.fire({
+            icon: 'error',
+            title: 'Hiba',
+            text: 'Hálózati hiba vagy a szerver nem elérhető.',
+            confirmButtonText: 'OK'
+        });
         console.error("Hiba történt:", error);
     }
 
     
 
 }
+
+
 chatInput.addEventListener("input", () => {
     // itt igazitom az input szövegmező magasságát a tartalmához
     chatInput.style.height = `${inputInitHeight}px`;
@@ -168,12 +181,60 @@ chatInput.addEventListener("input", () => {
 
   chatInput.addEventListener("keydown", (e) => {
     //ha az Enter billentyűt a Shift nélkül van lenyomva
-    if(e.key === "Enter" && !e.shiftKey && window.innerWidth > 400){
+    if(e.key === "Enter" && !e.shiftKey && window.innerWidth > 800){
         e.preventDefault();
         handleChat();
     }
+
    
   });
+  chatInput.addEventListener("focus", () => {
+    // Timeout azért kell, mert a billentyűzet felugrása után kell görgetni
+    setTimeout(() => {
+        chatInput.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 300); // kisebb delay kellhet, hogy a billentyűzet tényleg feljöjjön előtte
+});
 sendChatBtn.addEventListener("click",handleChat);
 chatbotToggler.addEventListener("click", ()=> document.body.classList.toggle("show-chatbot"));
 chatbotCloseBtn.addEventListener("click", () => document.body.classList.remove("show-chatbot"));
+
+document.addEventListener("DOMContentLoaded", () => {
+    const chatInput = document.querySelector(".chat-input textarea");
+    const chatbox = document.querySelector(".chatbox");
+    const helperSection = document.querySelector(".helper-questions");
+
+    // segítő kérdés gombra kattintunk  elküldi, és eltűnik a helper
+    document.querySelectorAll(".helper-btn").forEach(button => {
+        button.addEventListener("click", () => {
+            chatInput.value = button.textContent;
+            helperSection?.classList.add("hidden");
+            handleChat(); 
+        });
+    });
+
+    // gépelésre is eltűnik a helper kérdés
+    chatInput.addEventListener("input", () => {
+        if (chatInput.value.trim() !== "") {
+            helperSection?.classList.add("hidden");
+        }
+    });
+
+    // válasz megérkezésére is eltűnik (Observer figyeli a chatbox változását)
+    const observer = new MutationObserver(() => {
+        helperSection?.classList.add("hidden");
+    });
+
+    observer.observe(chatbox, { childList: true });
+
+
+    // Swal üzenet csak chatbot oldalon egy TIPP
+    if (window.location.pathname === "/chatbot") {
+        Swal.fire({
+            icon: 'info',
+            title: 'TIPP',
+            text: 'A pontosabb válaszhoz hasznalj ékezeteket és kis-nagybetűt a fogalmakhoz!',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    }
+});
