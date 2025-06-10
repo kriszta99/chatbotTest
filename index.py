@@ -19,7 +19,7 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 UPSTASH_VECTOR_REST_URL = os.getenv("UPSTASH_VECTOR_REST_URL")
 UPSTASH_VECTOR_REST_TOKEN = os.getenv("UPSTASH_VECTOR_REST_TOKEN")
 api_key = os.getenv("GEMINI_API_KEY")
-sparse_model = BGEM3FlagModel('BAAI/bge-m3', use_fp16=False)
+sparse_model = BGEM3FlagModel('BAAI/bge-m3', use_fp16=True)
 
 app = Flask(__name__)
 vector_db = Index(url=UPSTASH_VECTOR_REST_URL, token=UPSTASH_VECTOR_REST_TOKEN)
