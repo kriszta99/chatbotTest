@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template, request, redirect, flash
+from flask import Flask, jsonify, render_template, request, redirect
 from upstash_vector import Index
 import numpy as np
 from collections import defaultdict
@@ -63,7 +63,10 @@ def get_embedding(text: str, model="text-embedding-ada-002") -> np.ndarray:
             raise RuntimeError(f"A text-embedding-ada-002 modell limitje elfogyott.")
         else:
             raise RuntimeError(f"Embedding model error:{str(e)}")
-
+        
+print("Warming up embedding model...")
+get_embedding("warmup request", model="text-embedding-ada-002")
+print("Embedding model ready.")
 
 #BGE-M3 sparse embedding modell segitségével atalakitom a felhasznaló kérdését Sparse vectorrá s visszatéritem 
 def get_sparse_vector_from_query(user_query: str) -> SparseVector:
@@ -79,21 +82,31 @@ def get_sparse_vector_from_query(user_query: str) -> SparseVector:
         "colbert": False
     }
 
-    response = requests.post(url, headers=headers, json=data)
-    if response.status_code == 200:
-        json_resp = response.json()
-        sparse_vec_full = json_resp['sparse'][0]
-        # Csak a nem nulla elemeket vesszük, index és érték párban
-        indices = [int(i) for i, v in enumerate(sparse_vec_full) if v != 0]
-        values = [float(v) for v in sparse_vec_full if v != 0]
-        sparse_vector = SparseVector(
-            indices=indices,
-            values=values
-        )
-        return sparse_vector
-    else:
-        raise Exception(f"API hiba: {response.status_code} - {response.text}")    
- 
+    try:
+        response = requests.post(url, headers=headers, json=data, timeout=10)
+
+        if response.status_code == 200:
+            json_resp = response.json()
+            sparse_vec_full = json_resp['sparse'][0]
+
+            arr = np.array(sparse_vec_full)
+            nonzero_indices = np.nonzero(arr)[0]
+            nonzero_values = arr[nonzero_indices].astype(float)
+
+            indices = nonzero_indices.tolist()
+            values = nonzero_values.tolist()
+
+            return SparseVector(indices=indices, values=values)
+
+        elif response.status_code == 503:
+            raise RuntimeError("A bge-m3 modell túlterhelt. Próbáld meg később újra.")
+        else:
+            raise Exception(f"API hiba: {response.status_code} - {response.text}")
+
+    except requests.exceptions.RequestException as e:
+        # hálózati hiba vagy timeout
+        raise RuntimeError(f"Hálózati vagy kapcsolat hiba: {str(e)}")    
+
 """
 #dense vector lekerdezese
 def get_chunk_id_from_embedding(query_embedding):
@@ -110,6 +123,7 @@ def get_chunk_id_from_embedding(query_embedding):
     print(len(chunk_ids)) 
     #print(chunk_ids)
     return chunk_ids"""
+
 #hibrid lekerdezes: dense (sűrű) + sparse (ritka) vectorok és a függvny visszaadja a chunk_id-ket
 def get_chunk_id_from_embedding(query_embedding, query_sparse_vector):
     # hibrid lekérdezés: dense + sparse
@@ -197,8 +211,8 @@ def get_llm_response(context, question):
             #model="gemini-2.0-flash-thinking-exp-01-21",
             #model = "gemini-2.0-flash",
             #model="gemini-1.5-flash",
-            model="gemini-2.0-flash",
-            #model = "gemini-2.5-flash-preview-05-20",
+            #model="gemini-2.0-flash",
+            model = "gemini-2.5-flash-preview-05-20",
 
 
             contents=[full_prompt]
@@ -244,7 +258,12 @@ def index():
             return jsonify({"error": str(e)}), 503
         except Exception as e:
             return jsonify({"error": "Ismeretlen hiba: " + str(e)}), 500
-        query_sparse_vector = get_sparse_vector_from_query(user_question)
+        try:
+            query_sparse_vector = get_sparse_vector_from_query(user_question)
+        except RuntimeError as e:
+            return jsonify({"error": str(e)}), 503
+        except Exception as e:
+            return jsonify({"error": "Ismeretlen hiba: " + str(e)}), 500
         # kontextus összeállítása a lekérdezett embedding alapján
         context, top_k_size = get_context_text(embedding,query_sparse_vector)
         try:
@@ -262,4 +281,4 @@ def index():
 if __name__ == '__main__':
     #load_all_vectors_to_list()
     #app.run(debug=True)
-    app.run(host="0.0.0.0", port=10000)
+    app.run()
