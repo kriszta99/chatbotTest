@@ -5,4 +5,4 @@ python-dotenv==1.1.0
 upstash_vector==0.8.0
 google-genai==1.19.0
 gunicorn==23.0.0
-flagembedding==1.2.7
+request==2.32.4

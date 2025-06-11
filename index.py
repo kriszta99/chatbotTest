@@ -4,12 +4,11 @@ import numpy as np
 from collections import defaultdict
 import os
 import time
+import requests
 import openai
 from google import genai
 from upstash_vector.types import SparseVector, FusionAlgorithm, QueryMode
-from FlagEmbedding import BGEM3FlagModel # sparse vector embbeding model
-
-from concurrent.futures import ThreadPoolExecutor, wait
+from concurrent.futures import ThreadPoolExecutor
 import threading
 from dotenv import load_dotenv
 
@@ -19,7 +18,6 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 UPSTASH_VECTOR_REST_URL = os.getenv("UPSTASH_VECTOR_REST_URL")
 UPSTASH_VECTOR_REST_TOKEN = os.getenv("UPSTASH_VECTOR_REST_TOKEN")
 api_key = os.getenv("GEMINI_API_KEY")
-sparse_model = BGEM3FlagModel('BAAI/bge-m3', use_fp16=True)
 
 app = Flask(__name__)
 vector_db = Index(url=UPSTASH_VECTOR_REST_URL, token=UPSTASH_VECTOR_REST_TOKEN)
@@ -69,17 +67,33 @@ def get_embedding(text: str, model="text-embedding-ada-002") -> np.ndarray:
 
 #BGE-M3 sparse embedding modell segitségével atalakitom a felhasznaló kérdését Sparse vectorrá s visszatéritem 
 def get_sparse_vector_from_query(user_query: str) -> SparseVector:
-    sparse_vectorResp = sparse_model.encode(
-        user_query,
-        return_dense=False,
-        return_sparse=True,
-        return_colbert_vecs=False
-    )
-    
-    return SparseVector(
-        indices=[int(k) for k in sparse_vectorResp['lexical_weights'].keys()],
-        values=[float(v) for v in sparse_vectorResp['lexical_weights'].values()]
-    )
+    url = "https://api.deepinfra.com/v1/inference/BAAI/bge-m3-multi"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer GPdqwIzw3NsvoJiynSDGrO9C0HjQ1X2t"
+    }
+    data = {
+        "inputs": [user_query],
+        "dense": False,
+        "sparse": True,
+        "colbert": False
+    }
+
+    response = requests.post(url, headers=headers, json=data)
+    if response.status_code == 200:
+        json_resp = response.json()
+        sparse_vec_full = json_resp['sparse'][0]
+        # Csak a nem nulla elemeket vesszük, index és érték párban
+        indices = [int(i) for i, v in enumerate(sparse_vec_full) if v != 0]
+        values = [float(v) for v in sparse_vec_full if v != 0]
+        sparse_vector = SparseVector(
+            indices=indices,
+            values=values
+        )
+        return sparse_vector
+    else:
+        raise Exception(f"API hiba: {response.status_code} - {response.text}")    
+ 
 """
 #dense vector lekerdezese
 def get_chunk_id_from_embedding(query_embedding):
@@ -208,6 +222,7 @@ def init_load():
         if not loading_done:
                 return render_template('loading.html')
     return redirect("/chatbot")
+
 @app.route("/status")
 def status():
     return jsonify({"done": loading_done})
