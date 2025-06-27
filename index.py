@@ -213,7 +213,7 @@ def get_llm_response(context, question):
     #client = genai.Client(api_key=api_key_pro)
     client = genai.Client(api_key=api_key)
 
-    full_prompt = f"<context>{context}</context>Kérem, válaszoljon az alábbi kérdésre a fent megadott kontextus alapján (Ha nincs megadva konkrét kérdés, add meg ezt az üzenetet: Adj meg egy kérdést!), vedd ki a markdown formátumot:<user_query>{question}</user_query>\nVálasz:"
+    full_prompt = f"<context>{context}</context>Kérem, válaszoljon az alábbi kérdésre a fent megadott kontextus alapján, vedd ki a markdown formátumot:<user_query>{question}</user_query>\nVálasz:"
     try:
         response = client.models.generate_content(
             #model = "gemini-2.5-pro-preview-05-06",
@@ -327,4 +327,4 @@ def index():
 if __name__ == '__main__':
     #load_all_vectors_to_list()
     #app.run(debug=True)
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=10000 )
