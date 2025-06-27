@@ -211,8 +211,8 @@ def get_context_text(query_embedding,query_sparse_vector):
 #az LLM model segitségével választ generalok a feltett kérdésre
 def get_llm_response(context, question):
     
-    #client = genai.Client(api_key=api_key_pro)
-    client = genai.Client(api_key=api_key)
+    client = genai.Client(api_key=api_key_pro)
+    #client = genai.Client(api_key=api_key)
 
     full_prompt = f"<context>{context}</context>Kérem, válaszoljon az alábbi kérdésre a fent megadott kontextus alapján, vedd ki a markdown formátumot:<user_query>{question}</user_query>\nVálasz:"
     try:
