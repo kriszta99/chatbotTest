@@ -20,6 +20,7 @@ UPSTASH_VECTOR_REST_TOKEN = os.getenv("UPSTASH_VECTOR_REST_TOKEN")
 api_key = os.getenv("GEMINI_API_KEY")
 openRouter = os.getenv("OPEN_ROUTER_API_KEY")
 api_key_pro = os.getenv("GEMINI_API_KEY_PRO")
+deep_infra_api_key = os.getenv("DEEPINFRA_API_KEY")
 
 app = Flask(__name__)
 
@@ -75,7 +76,7 @@ def get_sparse_vector_from_query(user_query: str) -> SparseVector:
     url = "https://api.deepinfra.com/v1/inference/BAAI/bge-m3-multi"
     headers = {
         "Content-Type": "application/json",
-        "Authorization": "Bearer GPdqwIzw3NsvoJiynSDGrO9C0HjQ1X2t"
+        "Authorization": f"Bearer {deep_infra_api_key}"
     }
     data = {
         "inputs": [user_query],
