@@ -1,1 +1,1 @@
-Egy Flask-alapú weboldal chatbot (Sapi-Chat), amely OpenAI-t, DeepInfra-t és Gemini-2.0-flash modellt használ válaszadásra, és Upstash vektoradatbázisban tárolt adatokon keres.
+Egy Flask-alapú weboldal chatbot (Sapi-Chat), amely Gemini-2.0-Flash modellt használja a válaszadásra, és Upstash vektoradatbázisban tárolt vektorok keresésében.
